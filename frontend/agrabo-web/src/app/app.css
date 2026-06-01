@@ -1,0 +1,39 @@
+main {
+  min-height: calc(100vh - 168px);
+}
+
+.admin-float {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 1040;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--agrabo-brown);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(189, 106, 0, 0.22);
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(91, 37, 15, 0.12);
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.admin-float:hover {
+  color: #fff;
+  background: var(--agrabo-brown);
+}
+
+@media (max-width: 768px) {
+  .admin-float {
+    bottom: 84px;
+    left: 12px;
+    padding: 8px 10px;
+  }
+
+  .admin-float span {
+    display: none;
+  }
+}
