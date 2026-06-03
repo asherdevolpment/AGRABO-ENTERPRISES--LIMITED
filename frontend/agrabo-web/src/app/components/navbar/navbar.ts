@@ -29,7 +29,7 @@ import { CartService } from '../../services/cart.service';
                 <i class="bi bi-cart3"></i>
                 <span>{{ cart.itemCount() }}</span>
               </button>
-              <a class="btn btn-agrabo btn-sm whatsapp-order" href="https://wa.me/256706506319" target="_blank" rel="noopener">
+              <a class="btn btn-agrabo btn-sm whatsapp-order" href="https://api.whatsapp.com/send?phone=256706506319" target="_blank" rel="noopener">
                 <i class="bi bi-whatsapp"></i>
                 WhatsApp
               </a>

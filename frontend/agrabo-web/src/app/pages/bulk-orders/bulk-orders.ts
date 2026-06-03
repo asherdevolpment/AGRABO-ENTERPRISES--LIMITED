@@ -83,7 +83,7 @@ import { BulkRequestService } from '../../services/bulk-request.service';
             </div>
 
             <button class="btn btn-agrabo w-100" type="submit" [disabled]="form.invalid">Submit request</button>
-            <a class="whatsapp-line" href="https://wa.me/256706506319" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i>WhatsApp bulk team</a>
+            <a class="whatsapp-line" href="https://api.whatsapp.com/send?phone=256706506319" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i>WhatsApp bulk team</a>
           </form>
         </section>
       </div>

@@ -585,6 +585,6 @@ export class ProductDetailPage {
 
   whatsappUrl(product: Product): string {
     const text = encodeURIComponent(`Hello AGRABO, I want to order ${this.quantity()} x ${product.name} ${product.size}.`);
-    return `https://wa.me/256706506319?text=${text}`;
+    return `https://api.whatsapp.com/send?phone=256706506319&text=${text}`;
   }
 }

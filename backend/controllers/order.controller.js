@@ -69,7 +69,7 @@ async function createOrder(req, res) {
     await OrderItem.bulkCreate(orderItems.map((item) => ({ ...item, OrderId: order.id })));
 
     const whatsappNumber = settings?.whatsappNumber || process.env.WHATSAPP_NUMBER || '256706506319';
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(whatsappMessage)}`;
 
     return res.status(201).json({ orderId: order.id, whatsappMessage, whatsappUrl });
   } catch (error) {

@@ -303,7 +303,7 @@ export class ContactPage {
   readonly messageSent = signal(false);
 
   readonly contactMethods = [
-    { title: 'WhatsApp', value: '+256 706 506 319', icon: 'bi bi-whatsapp', href: 'https://wa.me/256706506319', external: true, primary: true },
+    { title: 'WhatsApp', value: '+256 706 506 319', icon: 'bi bi-whatsapp', href: 'https://api.whatsapp.com/send?phone=256706506319', external: true, primary: true },
     { title: 'Phone', value: '0706 506 319', icon: 'bi bi-telephone-fill', href: 'tel:+256706506319', external: false, primary: false },
     { title: 'Email', value: 'info@agrabo.ug', icon: 'bi bi-envelope-fill', href: 'mailto:info@agrabo.ug', external: false, primary: false },
     { title: 'Location', value: 'Kampala, Uganda', icon: 'bi bi-geo-alt-fill', href: 'https://www.google.com/maps?q=Kampala%2C%20Uganda', external: true, primary: false }

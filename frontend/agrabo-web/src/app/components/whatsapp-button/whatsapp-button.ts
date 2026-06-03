@@ -47,5 +47,5 @@ import { environment } from '../../../environments/environment';
   `]
 })
 export class WhatsappButton {
-  readonly url = `https://wa.me/${environment.whatsappNumber}`;
+  readonly url = `https://api.whatsapp.com/send?phone=${environment.whatsappNumber}`;
 }
