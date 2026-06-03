@@ -5,8 +5,10 @@ import { Product } from '../models/product.model';
 @Injectable({ providedIn: 'root' })
 export class CartService {
   private readonly cartItems = signal<CartItem[]>([]);
+  private readonly drawerOpenState = signal(false);
 
   readonly items = this.cartItems.asReadonly();
+  readonly drawerOpen = this.drawerOpenState.asReadonly();
   readonly itemCount = computed(() => this.cartItems().reduce((sum, item) => sum + item.quantity, 0));
   readonly subtotal = computed(() => this.cartItems().reduce((sum, item) => sum + item.product.price * item.quantity, 0));
 
@@ -20,6 +22,7 @@ export class CartService {
       }
       return [...items, { product, quantity }];
     });
+    this.openDrawer();
   }
 
   updateQuantity(productId: number, quantity: number): void {
@@ -32,5 +35,18 @@ export class CartService {
 
   clear(): void {
     this.cartItems.set([]);
+    this.closeDrawer();
+  }
+
+  openDrawer(): void {
+    this.drawerOpenState.set(true);
+  }
+
+  closeDrawer(): void {
+    this.drawerOpenState.set(false);
+  }
+
+  toggleDrawer(): void {
+    this.drawerOpenState.update((isOpen) => !isOpen);
   }
 }

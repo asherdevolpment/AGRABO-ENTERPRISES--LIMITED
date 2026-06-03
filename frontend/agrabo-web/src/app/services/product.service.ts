@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, catchError, of } from 'rxjs';
+import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Product } from '../models/product.model';
 
@@ -58,6 +58,33 @@ export const STARTER_PRODUCTS: Product[] = [
     price: 0,
     stock: 10,
     imageUrl: 'assets/products/deli-honey-bulk.png'
+  },
+  {
+    id: 7,
+    name: 'Deli Honey',
+    size: '2kg',
+    description: 'Large home pack for families and frequent honey use.',
+    price: 105000,
+    stock: 10,
+    imageUrl: 'assets/PRODUCT TEMLATE .png'
+  },
+  {
+    id: 8,
+    name: 'Deli Honey',
+    size: 'Gift Pack',
+    description: 'A simple honey gift option for teams, guests, and events.',
+    price: 45000,
+    stock: 18,
+    imageUrl: 'assets/PRODUCT TEMLATE .png'
+  },
+  {
+    id: 9,
+    name: 'Deli Honey',
+    size: 'Carton Pack',
+    description: 'Retail-ready carton supply for shops and resellers.',
+    price: 0,
+    stock: 8,
+    imageUrl: 'assets/products/deli-honey-bulk.png'
   }
 ];
 
@@ -68,7 +95,10 @@ export class ProductService {
   constructor(private readonly http: HttpClient) {}
 
   getProducts(): Observable<Product[]> {
-    return this.http.get<Product[]>(this.apiUrl).pipe(catchError(() => of(STARTER_PRODUCTS)));
+    return this.http.get<Product[]>(this.apiUrl).pipe(
+      map((products) => products.length >= 9 ? products : STARTER_PRODUCTS),
+      catchError(() => of(STARTER_PRODUCTS))
+    );
   }
 
   getProduct(id: number): Observable<Product | undefined> {

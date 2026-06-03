@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { CartService } from '../../services/cart.service';
@@ -9,106 +9,89 @@ import { OrderService } from '../../services/order.service';
   selector: 'app-checkout-page',
   imports: [DecimalPipe, ReactiveFormsModule],
   template: `
-    <section class="section-band checkout-page site-page honey-drip">
-      <div class="container">
-        <div class="checkout-head">
-          <h1 class="page-title">WhatsApp-Assisted Checkout</h1>
-          <div class="breadcrumb-line">Home <i class="bi bi-chevron-right"></i> <span>Checkout</span></div>
-          <p>Complete your order and our team will assist you on WhatsApp.<br><strong>Fast, simple and reliable.</strong></p>
-        </div>
+    <section class="checkout-page">
+      <div class="page-frame">
+        <header class="page-head">
+          <div>
+            <span><i class="bi bi-bag-check"></i>Checkout</span>
+            <h1>Confirm your order</h1>
+            <p>Enter delivery details. We finish confirmation on WhatsApp.</p>
+          </div>
+        </header>
 
-        <div class="checkout-grid">
-          <form class="agrabo-card checkout-form" [formGroup]="form" (ngSubmit)="submit()">
+        @if (orderSent()) {
+          <div class="checkout-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span><strong>Order received.</strong> WhatsApp opened for confirmation.</span>
+          </div>
+        }
+
+        <div class="checkout-layout">
+          <form class="checkout-form" [formGroup]="form" (ngSubmit)="submit()">
             <section>
-              <h2><i class="bi bi-person-fill"></i>Your Details</h2>
-              <p>We'll use this to confirm and deliver your order.</p>
-              <div class="row g-3">
-                <div class="col-md-6"><label class="form-label">Full Name *</label><input class="form-control" placeholder="Enter your full name" formControlName="name"></div>
-                <div class="col-md-6"><label class="form-label">Phone Number *</label><input class="form-control" placeholder="07XX XXX XXX" formControlName="phone"></div>
-                <div class="col-12"><label class="form-label">Location *</label><input class="form-control" placeholder="Enter your town, city or area" formControlName="location"><small>E.g. Kampala, Entebbe, Mukono</small></div>
+              <h2><i class="bi bi-person"></i>Your details</h2>
+              <div class="form-grid">
+                <label><span><i class="bi bi-person"></i>Full name *</span><input class="form-control" placeholder="Your name" formControlName="name"></label>
+                <label><span><i class="bi bi-telephone"></i>Phone *</span><input class="form-control" placeholder="07XX XXX XXX" formControlName="phone"></label>
+                <label><span><i class="bi bi-geo"></i>District / town *</span><input class="form-control" placeholder="Kampala" formControlName="district"></label>
+                <label><span><i class="bi bi-pin-map"></i>Delivery area *</span><input class="form-control" placeholder="Area, road, village" formControlName="location"></label>
+                <label class="wide"><span><i class="bi bi-signpost"></i>Landmark</span><input class="form-control" placeholder="Nearby building or stage" formControlName="landmark"></label>
               </div>
             </section>
 
             <section>
-              <h2><i class="bi bi-truck"></i>Delivery or Pickup</h2>
-              <p>How would you like to receive your order?</p>
+              <h2><i class="bi bi-truck"></i>Delivery and payment</h2>
               <div class="choice-grid">
-                <label class="choice-card">
-                  <input type="radio" formControlName="deliveryMethod" value="Delivery">
-                  <span><i class="bi bi-truck"></i><strong>Delivery</strong><small>We'll deliver to your location</small></span>
-                </label>
-                <label class="choice-card">
-                  <input type="radio" formControlName="deliveryMethod" value="Pickup">
-                  <span><i class="bi bi-shop"></i><strong>Pickup</strong><small>I'll pick up from a location</small></span>
-                </label>
-              </div>
-              <div class="row g-3 mt-1">
-                <div class="col-md-6"><label class="form-label">Preferred Date (Optional)</label><input class="form-control" type="date" formControlName="preferredDate"></div>
-                <div class="col-md-6"><label class="form-label">Preferred Time (Optional)</label><input class="form-control" type="time" formControlName="preferredTime"></div>
-                <div class="col-12"><label class="form-label">Order Notes (Optional)</label><textarea class="form-control" rows="3" placeholder="Any special instructions or additional notes?" formControlName="notes"></textarea><small>We'll do our best to accommodate your request.</small></div>
+                <label><input type="radio" formControlName="deliveryMethod" value="Delivery"><i class="bi bi-truck"></i><span><strong>Delivery</strong><small>To your location</small></span></label>
+                <label><input type="radio" formControlName="deliveryMethod" value="Pickup"><i class="bi bi-shop"></i><span><strong>Pickup</strong><small>Arrange pickup</small></span></label>
+                <label><input type="radio" formControlName="paymentMethod" value="MTN Mobile Money"><i class="bi bi-phone"></i><span><strong>MTN MoMo</strong><small>Manual confirmation</small></span></label>
+                <label><input type="radio" formControlName="paymentMethod" value="Cash on Delivery"><i class="bi bi-wallet2"></i><span><strong>Cash</strong><small>Pay on arrival</small></span></label>
               </div>
             </section>
 
             <section>
-              <h2><i class="bi bi-lock-fill"></i>Payment Method</h2>
-              <p>Pay when you receive your order.</p>
-              <div class="choice-grid">
-                <label class="choice-card">
-                  <input type="radio" formControlName="paymentMethod" value="Cash on Delivery">
-                  <span><i class="bi bi-wallet2"></i><strong>Cash on Delivery</strong><small>Pay in cash when your order arrives</small></span>
-                </label>
-                <label class="choice-card">
-                  <input type="radio" formControlName="paymentMethod" value="Mobile Money">
-                  <span><i class="bi bi-phone"></i><strong>Mobile Money</strong><small>Pay via MTN or Airtel Money</small></span>
-                </label>
+              <h2><i class="bi bi-calendar2-check"></i>Optional notes</h2>
+              <div class="form-grid">
+                <label><span><i class="bi bi-calendar3"></i>Date</span><input class="form-control" type="date" formControlName="preferredDate"></label>
+                <label><span><i class="bi bi-clock"></i>Time</span><input class="form-control" type="time" formControlName="preferredTime"></label>
+                <label class="wide"><span><i class="bi bi-chat-left-text"></i>Note</span><textarea class="form-control" rows="3" placeholder="Optional note" formControlName="notes"></textarea></label>
               </div>
             </section>
 
-            <button class="btn btn-agrabo btn-lg w-100 mt-3" type="submit" [disabled]="form.invalid || cart.items().length === 0">
-              <i class="bi bi-whatsapp me-2"></i>Confirm & Send to WhatsApp
+            <button class="btn btn-agrabo w-100" type="submit" [disabled]="form.invalid || cart.items().length === 0">
+              <i class="bi bi-whatsapp me-2"></i>Confirm on WhatsApp
             </button>
-            <p class="text-center small text-muted mt-2 mb-0">You will be redirected to WhatsApp to complete your order.</p>
           </form>
 
-          <aside class="agrabo-card order-summary">
-            <h2><i class="bi bi-cart3"></i>Order Summary</h2>
+          <aside class="order-summary">
+            <h2><i class="bi bi-receipt"></i>Summary</h2>
             @if (cart.items().length) {
-              @for (item of cart.items(); track item.product.id) {
-                <div class="summary-item">
-                  <img [src]="item.product.imageUrl || 'assets/products/deli-honey-500g.png'" [alt]="item.product.name + ' ' + item.product.size">
-                  <div>
-                    <strong>{{ item.product.name }} {{ item.product.size }}</strong>
-                    <span>100% Pure Natural Honey</span>
-                    <small>UGX {{ item.product.price | number }}</small>
-                    <div class="mini-qty">
-                      <button type="button" (click)="cart.updateQuantity(item.product.id, item.quantity - 1)">−</button>
-                      <span>{{ item.quantity }}</span>
-                      <button type="button" (click)="cart.updateQuantity(item.product.id, item.quantity + 1)">+</button>
+              <div class="summary-list">
+                @for (item of cart.items(); track item.product.id) {
+                  <div class="summary-item">
+                    <img [src]="item.product.imageUrl || 'assets/PRODUCT TEMLATE .png'" [alt]="item.product.name + ' ' + item.product.size">
+                    <div>
+                      <strong>{{ item.product.name }} {{ item.product.size }}</strong>
+                      <small>UGX {{ item.product.price | number }}</small>
+                      <div class="mini-qty">
+                        <button type="button" (click)="cart.updateQuantity(item.product.id, item.quantity - 1)">-</button>
+                        <span>{{ item.quantity }}</span>
+                        <button type="button" (click)="cart.updateQuantity(item.product.id, item.quantity + 1)">+</button>
+                      </div>
                     </div>
+                    <b>UGX {{ item.product.price * item.quantity | number }}</b>
                   </div>
-                  <b>UGX {{ item.product.price * item.quantity | number }}</b>
-                </div>
-              }
+                }
+              </div>
+
               <div class="summary-totals">
-                <div><span>Subtotal ({{ cart.itemCount() }} items)</span><strong>UGX {{ cart.subtotal() | number }}</strong></div>
-                <div><span>Delivery Fee</span><strong>UGX {{ deliveryFee | number }}</strong></div>
-                <div><span>Discount</span><strong>- UGX 0</strong></div>
-                <div class="total"><span>Total</span><strong>UGX {{ cart.subtotal() + deliveryFee | number }}</strong></div>
+                <div><span><i class="bi bi-basket"></i>Subtotal</span><strong>UGX {{ cart.subtotal() | number }}</strong></div>
+                <div><span><i class="bi bi-truck"></i>Delivery</span><strong>UGX {{ deliveryFee | number }}</strong></div>
+                <div class="total"><span><i class="bi bi-check2-circle"></i>Total</span><strong>UGX {{ cart.subtotal() + deliveryFee | number }}</strong></div>
               </div>
             } @else {
-              <div class="empty-summary"><i class="bi bi-bag"></i><p>Your cart is empty. Add honey from the shop first.</p></div>
+              <div class="empty-summary"><i class="bi bi-bag"></i>Your cart is empty.</div>
             }
-
-            <div class="delivery-estimate">
-              <i class="bi bi-truck"></i>
-              <div><strong>Estimated Delivery</strong><span>Within 24 - 48 hours</span><small>You will receive a confirmation on WhatsApp.</small></div>
-            </div>
-
-            <div class="summary-trust">
-              <div><i class="bi bi-lock"></i><strong>100% Secure Ordering</strong><span>Your details are safe with us.</span></div>
-              <div><i class="bi bi-patch-check"></i><strong>Trusted by Beekeepers</strong><span>Supporting local communities.</span></div>
-              <div><i class="bi bi-award"></i><strong>Quality Guaranteed</strong><span>Pure honey, no additives.</span></div>
-            </div>
           </aside>
         </div>
       </div>
@@ -116,241 +99,314 @@ import { OrderService } from '../../services/order.service';
   `,
   styles: [`
     .checkout-page {
-      position: relative;
-      padding-top: 46px;
+      background: #fff;
+      padding: 16px 0 28px;
     }
 
-    .checkout-head {
-      max-width: 620px;
-      margin-bottom: 24px;
+    .page-frame {
+      width: min(100% - 32px, 1180px);
+      margin-inline: auto;
     }
 
-    .checkout-head p {
-      color: #3b2d27;
-      margin-top: 14px;
+    .page-head {
+      border-bottom: 1px solid var(--agrabo-line);
+      padding-bottom: 14px;
+      margin-bottom: 16px;
     }
 
-    .checkout-head strong {
-      color: var(--agrabo-amber);
+    .page-head span {
+      color: var(--agrabo-green);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
-    .checkout-grid {
+    .page-head h1 {
+      color: var(--agrabo-deep);
+      font-size: clamp(1.6rem, 3vw, 2.35rem);
+      font-weight: 900;
+      margin: 4px 0;
+    }
+
+    .page-head p {
+      color: var(--agrabo-muted);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    .checkout-success {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--agrabo-green);
+      background: var(--agrabo-leaf);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.86rem;
+      margin-bottom: 14px;
+    }
+
+    .checkout-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) 460px;
-      gap: 42px;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 16px;
       align-items: start;
     }
 
     .checkout-form,
     .order-summary {
-      padding: 22px;
+      background: #fff;
+      border: 1px solid var(--agrabo-line);
+      border-radius: 10px;
+      box-shadow: var(--agrabo-shadow-soft);
+      padding: 16px;
     }
 
     .checkout-form section {
-      margin-bottom: 22px;
+      border-bottom: 1px solid #eee8df;
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+    }
+
+    .checkout-form section:last-of-type {
+      border-bottom: 0;
     }
 
     .checkout-form h2,
     .order-summary h2 {
-      color: var(--agrabo-brown);
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: 1.25rem;
+      color: var(--agrabo-deep);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--agrabo-deep);
+      font-size: 0.98rem;
       font-weight: 900;
-      margin-bottom: 2px;
+      margin: 0 0 10px;
     }
 
     .checkout-form h2 i,
     .order-summary h2 i {
-      color: var(--agrabo-amber);
-      margin-right: 10px;
+      color: var(--agrabo-green);
+      font-size: 1rem;
     }
 
-    .checkout-form p,
-    .checkout-form small {
-      color: #5c4b44;
-      font-size: 0.82rem;
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .form-grid label {
+      display: grid;
+      gap: 5px;
+    }
+
+    .form-grid span {
+      color: var(--agrabo-deep);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.76rem;
+      font-weight: 900;
+    }
+
+    .form-grid span i {
+      color: var(--agrabo-green);
+      font-size: 0.84rem;
+    }
+
+    .form-grid .wide {
+      grid-column: 1 / -1;
     }
 
     .choice-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
+      gap: 9px;
     }
 
-    .choice-card {
-      display: flex;
-      gap: 12px;
+    .choice-grid label {
+      display: grid;
+      grid-template-columns: 16px 30px minmax(0, 1fr);
+      gap: 8px;
       align-items: center;
       border: 1px solid var(--agrabo-line);
       border-radius: 8px;
-      padding: 12px;
-      background: rgba(255, 255, 255, 0.72);
-      cursor: pointer;
+      padding: 9px;
+      background: #fff;
     }
 
-    .choice-card:has(input:checked) {
-      border-color: var(--agrabo-amber);
-      box-shadow: inset 0 0 0 1px var(--agrabo-amber);
+    .choice-grid label:has(input:checked) {
+      border-color: var(--agrabo-green);
+      background: var(--agrabo-mint);
     }
 
-    .choice-card span,
-    .choice-card strong,
-    .choice-card small {
+    .choice-grid label > i {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      color: var(--agrabo-green);
+      background: #fff7e8;
+      border-radius: 999px;
+      font-size: 0.98rem;
+    }
+
+    .choice-grid label:has(input:checked) > i {
+      color: #fff;
+      background: var(--agrabo-green);
+    }
+
+    .choice-grid strong,
+    .choice-grid small {
       display: block;
     }
 
-    .choice-card span {
-      display: grid;
-      grid-template-columns: 38px minmax(0, 1fr);
-      column-gap: 8px;
-      align-items: center;
+    .choice-grid strong {
+      color: var(--agrabo-deep);
+      font-size: 0.8rem;
+      font-weight: 900;
     }
 
-    .choice-card i {
-      color: var(--agrabo-amber);
-      font-size: 1.4rem;
-      grid-row: span 2;
+    .choice-grid small {
+      color: var(--agrabo-muted);
+      font-size: 0.72rem;
+    }
+
+    .checkout-form .btn {
+      min-height: 40px;
+      font-size: 0.88rem;
     }
 
     .order-summary {
       position: sticky;
-      top: 96px;
+      top: 92px;
+      border-top: 3px solid var(--agrabo-green);
+    }
+
+    .summary-list {
+      display: grid;
+      gap: 10px;
     }
 
     .summary-item {
       display: grid;
-      grid-template-columns: 78px minmax(0, 1fr) auto;
-      gap: 14px;
-      align-items: center;
-      border-bottom: 1px solid rgba(189, 106, 0, 0.18);
-      padding: 18px 0;
+      grid-template-columns: 52px minmax(0, 1fr);
+      gap: 10px;
+      border-bottom: 1px solid var(--agrabo-line);
+      padding-bottom: 10px;
     }
 
     .summary-item img {
-      width: 72px;
-      height: 82px;
+      width: 48px;
+      height: 52px;
       object-fit: contain;
+      background: #fff8ee;
+      border-radius: 8px;
     }
 
     .summary-item strong,
-    .summary-item span,
-    .summary-item small {
+    .summary-item small,
+    .summary-item b {
       display: block;
     }
 
     .summary-item strong {
-      color: var(--agrabo-brown);
+      color: var(--agrabo-deep);
+      font-size: 0.8rem;
+      font-weight: 900;
+    }
+
+    .summary-item small {
+      color: var(--agrabo-muted);
+      font-size: 0.74rem;
+      margin: 2px 0 6px;
     }
 
     .summary-item b {
+      grid-column: 2;
       color: var(--agrabo-deep);
+      font-size: 0.8rem;
     }
 
     .mini-qty {
-      display: inline-flex;
-      align-items: center;
-      overflow: hidden;
-      margin-top: 8px;
+      display: inline-grid;
+      grid-template-columns: 30px 32px 30px;
       border: 1px solid var(--agrabo-line);
       border-radius: 7px;
+      overflow: hidden;
     }
 
     .mini-qty button {
-      width: 34px;
       border: 0;
       background: #fff;
-      color: var(--agrabo-brown);
+      color: var(--agrabo-green);
       font-weight: 900;
     }
 
     .mini-qty span {
-      width: 38px;
-      text-align: center;
       border-inline: 1px solid var(--agrabo-line);
-      background: #fff;
-      font-weight: 800;
+      text-align: center;
+      font-weight: 900;
     }
 
     .summary-totals {
-      padding-top: 14px;
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
     }
 
     .summary-totals div {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 10px;
+      align-items: center;
+      color: var(--agrabo-muted);
+      font-size: 0.86rem;
+    }
+
+    .summary-totals span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .summary-totals i {
+      color: var(--agrabo-green);
+    }
+
+    .summary-totals strong {
+      color: var(--agrabo-deep);
     }
 
     .summary-totals .total {
-      border-top: 1px solid rgba(189, 106, 0, 0.2);
-      padding-top: 12px;
+      border-top: 1px solid var(--agrabo-line);
       color: var(--agrabo-deep);
-      font-size: 1.25rem;
+      font-size: 1rem;
+      font-weight: 900;
+      padding-top: 10px;
     }
 
-    .delivery-estimate {
-      display: grid;
-      grid-template-columns: 60px minmax(0, 1fr);
-      gap: 14px;
-      align-items: center;
-      border: 1px solid var(--agrabo-line);
-      border-radius: 8px;
-      margin-top: 18px;
-      padding: 14px;
-      background: rgba(255, 247, 231, 0.72);
-    }
-
-    .delivery-estimate i {
+    .summary-totals .total i {
       color: var(--agrabo-amber);
-      font-size: 2.2rem;
-    }
-
-    .delivery-estimate strong,
-    .delivery-estimate span,
-    .delivery-estimate small {
-      display: block;
-    }
-
-    .summary-trust {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 18px;
-    }
-
-    .summary-trust div {
-      display: grid;
-      grid-template-columns: 30px minmax(0, 1fr);
-      gap: 8px;
-    }
-
-    .summary-trust i {
-      color: var(--agrabo-amber);
-      font-size: 1.2rem;
-    }
-
-    .summary-trust strong,
-    .summary-trust span {
-      display: block;
-      font-size: 0.78rem;
     }
 
     .empty-summary {
-      display: grid;
-      place-items: center;
-      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--agrabo-muted);
+      font-size: 0.86rem;
+      padding: 18px 0;
       text-align: center;
-      color: #6b5b53;
     }
 
-    .empty-summary i {
-      color: var(--agrabo-amber);
-      font-size: 2.5rem;
-    }
-
-    @media (max-width: 992px) {
-      .checkout-grid,
-      .choice-grid {
+    @media (max-width: 900px) {
+      .checkout-layout {
         grid-template-columns: 1fr;
       }
 
@@ -359,13 +415,14 @@ import { OrderService } from '../../services/order.service';
       }
     }
 
-    @media (max-width: 576px) {
-      .summary-item {
-        grid-template-columns: 64px minmax(0, 1fr);
+    @media (max-width: 560px) {
+      .form-grid,
+      .choice-grid {
+        grid-template-columns: 1fr;
       }
 
-      .summary-item b {
-        grid-column: 2;
+      .form-grid .wide {
+        grid-column: auto;
       }
     }
   `]
@@ -375,15 +432,18 @@ export class CheckoutPage {
   private readonly orders = inject(OrderService);
   readonly cart = inject(CartService);
   readonly deliveryFee = 5000;
+  readonly orderSent = signal(false);
 
   readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     phone: ['', Validators.required],
     location: ['', Validators.required],
+    district: ['', Validators.required],
+    landmark: [''],
     deliveryMethod: ['Delivery', Validators.required],
     preferredDate: [''],
     preferredTime: [''],
-    paymentMethod: ['Cash on Delivery', Validators.required],
+    paymentMethod: ['MTN Mobile Money', Validators.required],
     notes: ['']
   });
 
@@ -392,12 +452,13 @@ export class CheckoutPage {
       return;
     }
 
+    this.orderSent.set(false);
     const value = this.form.getRawValue();
     this.orders.createOrder({
       customer: {
         name: value.name,
         phone: value.phone,
-        location: value.location
+        location: [value.location, value.district, value.landmark ? `Landmark: ${value.landmark}` : ''].filter(Boolean).join(' | ')
       },
       notes: [
         value.notes,
@@ -410,6 +471,7 @@ export class CheckoutPage {
     }).subscribe({
       next: (response) => {
         this.cart.clear();
+        this.orderSent.set(true);
         Swal.fire('Order saved', 'We are opening WhatsApp so you can confirm with AGRABO.', 'success');
         window.open(response.whatsappUrl, '_blank');
       },

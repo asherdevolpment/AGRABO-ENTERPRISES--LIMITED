@@ -1,411 +1,570 @@
-import { Component, inject, signal } from '@angular/core';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap } from 'rxjs';
+import { Product } from '../../models/product.model';
 import { CartService } from '../../services/cart.service';
 import { ProductService } from '../../services/product.service';
 
 @Component({
   selector: 'app-product-detail-page',
-  imports: [AsyncPipe, DecimalPipe],
+  imports: [AsyncPipe, DecimalPipe, RouterLink],
   template: `
-    <section class="section-band">
-      <div class="container">
+    <section class="product-page">
+      <div class="product-frame">
         @if (product$ | async; as product) {
-          <div class="breadcrumb-line mb-3">Home <i class="bi bi-chevron-right"></i> Shop <i class="bi bi-chevron-right"></i> <span>{{ product.name }} {{ product.size }}</span></div>
-          <div class="detail-grid">
-            <div class="col-lg-6">
-              <div class="gallery-layout">
-                <div class="thumb-stack desktop-only">
-                  @for (thumb of thumbs; track thumb) {
-                    <button type="button"><img [src]="thumb" alt=""></button>
+          <nav class="breadcrumb-line" aria-label="Breadcrumb">
+            <a routerLink="/shop">Home</a>
+            <i class="bi bi-chevron-right"></i>
+            <a routerLink="/shop">Shop</a>
+            <i class="bi bi-chevron-right"></i>
+            <span>{{ product.name }} {{ product.size }}</span>
+          </nav>
+
+          <section class="product-layout">
+            <div class="visual-card">
+              <img src="assets/PRODUCT TEMLATE .png" [alt]="product.name + ' ' + product.size">
+            </div>
+
+            <div class="info-card">
+              <div class="product-copy">
+                <span class="hero-pill"><i class="bi bi-droplet-fill"></i>100% Natural Deli Honey</span>
+                <h1>{{ product.name }}</h1>
+                <strong class="size-label">{{ product.size }}</strong>
+                <p>{{ product.description || 'Pure, natural honey for tea, breakfast, and daily use. Carefully sourced and packed to preserve natural goodness.' }}</p>
+
+                <div class="price-row">
+                  @if (product.price > 0) {
+                    <strong>UGX {{ product.price | number }}</strong>
+                  } @else {
+                    <strong>Request pricing</strong>
                   }
                 </div>
-                <div class="detail-visual">
-                  <img [src]="detailImage(product.imageUrl)" [alt]="product.name + ' ' + product.size">
-                  <div class="pure-badge"><strong>100%</strong><span>Pure Honey</span></div>
-                </div>
-              </div>
-              <div class="detail-mini-trust agrabo-card">
-                <div><i class="bi bi-droplet-fill"></i><strong>100% Pure</strong><span>No additives</span></div>
-                <div><i class="bi bi-geo-alt-fill"></i><strong>Locally Sourced</strong><span>Across Uganda</span></div>
-                <div><i class="bi bi-person-hearts"></i><strong>Farmer Supported</strong><span>Empowering communities</span></div>
-                <div><i class="bi bi-flower1"></i><strong>Natural Goodness</strong><span>Raw & unprocessed</span></div>
-              </div>
-            </div>
 
-            <div>
-              <h1 class="page-title mb-2">{{ product.name }} {{ product.size }}</h1>
-              <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                <span class="star-row">★★★★★</span>
-                <span class="small">4.8 (128 reviews)</span>
-                <span class="small text-muted">| 100+ bought this month</span>
-              </div>
-              @if (product.price > 0) {
-                <p class="price-strong mb-2">UGX {{ product.price | number }}</p>
-              } @else {
-                <p class="price-strong mb-2">Contact for Pricing</p>
-              }
-              <p class="text-muted">{{ product.description }} Pure goodness you can taste, quality you can trust.</p>
-              <ul class="product-benefits">
-                <li>100% Pure & Natural - No additives, no preservatives</li>
-                <li>Locally sourced from trusted Ugandan beekeepers</li>
-                <li>Rich in antioxidants & natural enzymes</li>
-                <li>Perfect for daily wellness & healthy living</li>
-              </ul>
-
-              <div class="purchase-box agrabo-card">
-                <div class="row g-3">
-                  <div class="col-sm-5">
-                    <label class="form-label">Size</label>
-                    <div class="size-pills">
-                      <button class="active" type="button">{{ product.size }}</button>
-                      <button type="button">1kg</button>
+                <div class="benefit-list">
+                  @for (item of productBenefits; track item.title) {
+                    <div>
+                      <span><i [class]="item.icon"></i></span>
+                      <p>{{ item.title }}</p>
                     </div>
-                  </div>
-                  <div class="col-sm-5">
-                    <label class="form-label">Quantity</label>
-                    <div class="quantity-control">
-                      <button type="button" (click)="decrement()">−</button>
-                      <span>{{ quantity() }}</span>
-                      <button type="button" (click)="increment()">+</button>
-                    </div>
-                  </div>
+                  }
                 </div>
-                <div class="action-row mt-3">
-                  <a class="btn btn-outline-success btn-lg" href="https://wa.me/256706506319" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-2"></i>Order on WhatsApp</a>
-                  <button class="btn btn-honey btn-lg" type="button" (click)="cart.add(product, quantity())"><i class="bi bi-cart me-2"></i>Add to Cart</button>
+
+                <div class="delivery-card">
+                  <i class="bi bi-truck"></i>
+                  <span>
+                    <strong>Delivery in 24-48 hrs</strong>
+                    <small>within Kampala.</small>
+                  </span>
                 </div>
               </div>
 
-              <div class="delivery-line mt-3"><i class="bi bi-truck"></i><div><strong>Fast delivery across Uganda</strong><span>Orders are delivered within 1 - 3 working days.</span></div></div>
-            </div>
-          </div>
-
-          <div class="health-row agrabo-card mt-4">
-            @for (item of healthBenefits; track item.title) {
-              <div class="icon-feature"><i [class]="item.icon"></i><div><strong>{{ item.title }}</strong><span>{{ item.text }}</span></div></div>
-            }
-          </div>
-
-          <div class="related-row mt-4">
-            <div class="reviews agrabo-card">
-              <h2>Customer Reviews</h2>
-              <div class="review-score">4.8</div>
-              <div class="star-row">★★★★★</div>
-              <p class="small text-muted">(128 reviews)</p>
-              <button class="btn btn-outline-dark btn-sm">Write a Review</button>
-            </div>
-            <div class="also-like agrabo-card">
-              <h2>You May Also Like</h2>
-              <div class="suggestions">
-                @for (item of suggestions; track item.name) {
-                  <div>
-                    <img [src]="item.image" [alt]="item.name">
-                    <strong>{{ item.name }}</strong>
-                    <span class="star-row">★★★★★</span>
-                    <small>{{ item.price }}</small>
+              <aside class="purchase-card">
+                @if (product.price > 0) {
+                  <label>Quantity</label>
+                  <div class="quantity-control">
+                    <button type="button" aria-label="Decrease quantity" (click)="decrement()">-</button>
+                    <strong>{{ quantity() }}</strong>
+                    <button type="button" aria-label="Increase quantity" (click)="increment()">+</button>
                   </div>
+
+                  <a class="whatsapp-order" [href]="whatsappUrl(product)" target="_blank" rel="noopener">
+                    <i class="bi bi-whatsapp"></i>Order on WhatsApp
+                  </a>
+
+                  <button class="cart-action" type="button" (click)="addToCart(product)">
+                    <i class="bi bi-cart"></i>Add to cart
+                  </button>
+                } @else {
+                  <a class="whatsapp-order" routerLink="/bulk-orders">
+                    <i class="bi bi-box-seam"></i>Request bulk quote
+                  </a>
                 }
-              </div>
+              </aside>
             </div>
-          </div>
+          </section>
+
+          <section class="recommendations">
+            <h2>You may also like</h2>
+            <div class="recommend-grid">
+              @for (item of recommendations; track item.size) {
+                <article class="recommend-card">
+                  <img src="assets/PRODUCT TEMLATE .png" [alt]="item.name + ' ' + item.size">
+                  <div>
+                    <h3>{{ item.name }}</h3>
+                    <span>{{ item.size }}</span>
+                    <strong>UGX {{ item.price | number }}</strong>
+                  </div>
+                  <button type="button" aria-label="Add recommended product">
+                    <i class="bi bi-plus"></i>
+                  </button>
+                </article>
+              }
+
+              <a class="bulk-recommend" routerLink="/bulk-orders">
+                <span><i class="bi bi-boxes"></i></span>
+                <div>
+                  <strong>Need larger quantities?</strong>
+                  <small>Request a bulk quote.</small>
+                  <b><i class="bi bi-box-seam"></i>Bulk quote</b>
+                </div>
+              </a>
+            </div>
+          </section>
         } @else {
-          <div class="alert alert-warning">Product not found.</div>
+          <div class="not-found">
+            <h1>Product not found</h1>
+            <a class="primary-action" routerLink="/shop">Return to shop</a>
+          </div>
         }
       </div>
     </section>
   `,
   styles: [`
-    .detail-grid {
-      display: grid;
-      grid-template-columns: 1.1fr 0.95fr;
-      gap: 38px;
-      align-items: start;
+    .product-page {
+      background: #fff;
+      padding: 18px 0 10px;
     }
 
-    .gallery-layout {
-      display: grid;
-      grid-template-columns: 70px minmax(0, 1fr);
+    .product-frame {
+      width: min(100% - 32px, 1440px);
+      margin-inline: auto;
+    }
+
+    .breadcrumb-line {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 14px;
+      min-height: 34px;
+      color: #54504b;
+      margin-bottom: 14px;
     }
 
-    .thumb-stack {
+    .breadcrumb-line a,
+    .breadcrumb-line span {
+      color: #54504b;
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .breadcrumb-line i {
+      color: #7b746d;
+      font-size: 0.78rem;
+    }
+
+    .product-layout {
       display: grid;
-      gap: 10px;
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+      gap: 30px;
+      align-items: stretch;
+      margin-bottom: 18px;
     }
 
-    .thumb-stack button {
-      border: 1px solid var(--agrabo-line);
-      border-radius: 8px;
-      background: rgba(255, 252, 246, 0.9);
-      padding: 6px;
+    .visual-card,
+    .info-card,
+    .recommend-card,
+    .bulk-recommend,
+    .not-found {
+      background: #fff;
+      border: 1px solid #e6ddd3;
+      border-radius: 12px;
+      box-shadow: var(--agrabo-shadow-soft);
     }
 
-    .thumb-stack img {
-      width: 100%;
-      aspect-ratio: 1;
-      object-fit: cover;
-      border-radius: 6px;
-    }
-
-    .detail-visual {
-      min-height: 410px;
+    .visual-card {
       display: grid;
       place-items: center;
-      position: relative;
-      background: linear-gradient(135deg, #fffdf6, #fff3d8);
-      border: 1px solid var(--agrabo-line);
-      border-radius: 10px;
-      text-align: center;
+      min-height: 360px;
       overflow: hidden;
+      padding: 24px;
+      background: #fffdf8;
     }
 
-    .detail-visual img {
-      width: min(82%, 440px);
-      max-height: 370px;
+    .visual-card img {
+      width: min(100%, 390px);
+      max-height: 330px;
       object-fit: contain;
-      filter: drop-shadow(0 24px 18px rgba(91, 37, 15, 0.15));
+      object-position: center;
     }
 
-    .pure-badge {
-      position: absolute;
-      right: 20px;
-      top: 20px;
-      width: 82px;
-      height: 82px;
+    .info-card {
       display: grid;
-      place-items: center;
-      color: var(--agrabo-brown);
-      border: 1px solid var(--agrabo-line);
-      border-radius: 50%;
-      background: rgba(255, 250, 239, 0.85);
-      text-transform: uppercase;
-      font-size: 0.68rem;
+      grid-template-columns: minmax(0, 1fr) 286px;
+      gap: 24px;
+      align-items: center;
+      min-height: 360px;
+      padding: 28px;
+      background:
+        linear-gradient(90deg, #fff 0%, #fffbf5 100%);
     }
 
-    .pure-badge strong,
-    .pure-badge span {
-      display: block;
-    }
-
-    .product-benefits {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 16px;
-    }
-
-    .product-benefits li {
-      margin-bottom: 9px;
-      color: #473832;
-      font-size: 0.9rem;
-    }
-
-    .product-benefits li::before {
-      content: "✓";
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
       color: var(--agrabo-amber);
-      border: 1px solid var(--agrabo-amber);
-      border-radius: 50%;
-      margin-right: 8px;
-      padding: 0 3px;
-      font-size: 0.7rem;
+      background: #fff0dd;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 900;
+      padding: 7px 14px;
+      margin-bottom: 12px;
+    }
+
+    .product-copy h1 {
+      color: #12110f;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2rem, 3.2vw, 3rem);
+      font-weight: 900;
+      line-height: 0.96;
+      margin: 0;
+    }
+
+    .size-label {
+      display: block;
+      color: var(--agrabo-amber);
+      font-size: 1.05rem;
+      font-weight: 900;
+      margin: 2px 0 12px;
+    }
+
+    .product-copy > p {
+      max-width: 430px;
+      color: #4f4a45;
+      font-size: 0.9rem;
+      line-height: 1.48;
+      margin: 0 0 18px;
+    }
+
+    .price-row {
+      border-top: 1px solid #d8c8b2;
+      padding-top: 18px;
+      margin-bottom: 18px;
+    }
+
+    .price-row strong {
+      color: #14110f;
+      font-size: 1.25rem;
       font-weight: 900;
     }
 
-    .purchase-box {
-      padding: 18px;
-      background: rgba(255, 247, 231, 0.78);
+    .benefit-list {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
-    .size-pills {
-      display: flex;
-      gap: 8px;
+    .benefit-list div {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr);
+      align-items: center;
+      gap: 14px;
+      min-height: 34px;
     }
 
-    .size-pills button,
-    .quantity-control button {
-      min-width: 66px;
-      border: 1px solid var(--agrabo-line);
-      border-radius: 8px;
+    .benefit-list span,
+    .delivery-card > i {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      color: var(--agrabo-green);
+      background: #fff0da;
+      border-radius: 999px;
+      font-size: 0.95rem;
+    }
+
+    .benefit-list p {
+      color: #4f4a45;
+      font-size: 0.84rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .delivery-card {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      max-width: 280px;
+      border: 1px solid #e6ddd3;
+      border-radius: 10px;
+      padding: 10px;
       background: #fff;
-      color: var(--agrabo-brown);
-      font-weight: 800;
-      padding: 8px 12px;
     }
 
-    .size-pills .active {
-      border-color: var(--agrabo-amber);
-      box-shadow: inset 0 0 0 1px var(--agrabo-amber);
+    .delivery-card strong,
+    .delivery-card small {
+      display: block;
+    }
+
+    .delivery-card strong {
+      color: #14110f;
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    .delivery-card small {
+      color: #4f4a45;
+      font-size: 0.8rem;
+      margin-top: 2px;
+    }
+
+    .purchase-card {
+      align-self: center;
+      background: #fff;
+      border: 1px solid #e6ddd3;
+      border-radius: 12px;
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .purchase-card label {
+      color: #171412;
+      font-size: 0.92rem;
+      font-weight: 900;
     }
 
     .quantity-control {
-      display: inline-flex;
-      align-items: center;
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr) 54px;
+      min-height: 40px;
       overflow: hidden;
-      border: 1px solid var(--agrabo-line);
+      border: 1px solid #dcd3c8;
       border-radius: 8px;
       background: #fff;
     }
 
+    .quantity-control button,
+    .quantity-control strong {
+      display: grid;
+      place-items: center;
+      min-height: 40px;
+    }
+
     .quantity-control button {
-      min-width: 42px;
+      color: #14110f;
+      background: #fff;
       border: 0;
-      border-radius: 0;
-    }
-
-    .quantity-control span {
-      min-width: 52px;
-      text-align: center;
-      font-weight: 900;
-    }
-
-    .action-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-
-    .delivery-line {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      color: var(--agrabo-brown);
-    }
-
-    .delivery-line i {
-      color: var(--agrabo-amber);
-      font-size: 1.7rem;
-    }
-
-    .delivery-line span {
-      color: #574741;
-      display: block;
-      font-size: 0.8rem;
-    }
-
-    .detail-mini-trust,
-    .health-row {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      padding: 14px 18px;
-      margin-top: 12px;
-    }
-
-    .detail-mini-trust div {
-      display: grid;
-      grid-template-columns: 32px minmax(0, 1fr);
-      gap: 8px;
-      align-items: center;
-    }
-
-    .detail-mini-trust i {
-      color: var(--agrabo-olive);
-      font-size: 1.4rem;
-    }
-
-    .detail-mini-trust strong,
-    .detail-mini-trust span {
-      display: block;
-      font-size: 0.68rem;
-    }
-
-    .related-row {
-      display: grid;
-      grid-template-columns: 300px minmax(0, 1fr);
-      gap: 18px;
-    }
-
-    .reviews,
-    .also-like {
-      padding: 20px;
-    }
-
-    .reviews h2,
-    .also-like h2 {
-      color: var(--agrabo-brown);
-      font-family: Georgia, "Times New Roman", serif;
       font-size: 1.1rem;
       font-weight: 900;
     }
 
-    .review-score {
-      color: var(--agrabo-deep);
-      font-size: 3rem;
+    .quantity-control strong {
+      color: #14110f;
+      border-inline: 1px solid #dcd3c8;
       font-weight: 900;
-      line-height: 1;
     }
 
-    .suggestions {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .suggestions > div {
-      border: 1px solid var(--agrabo-line);
+    .whatsapp-order,
+    .cart-action,
+    .primary-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 42px;
       border-radius: 8px;
-      padding: 10px;
-      background: rgba(255, 255, 255, 0.68);
-    }
-
-    .suggestions img {
+      font-weight: 900;
+      text-decoration: none;
       width: 100%;
-      height: 110px;
+    }
+
+    .whatsapp-order,
+    .primary-action {
+      color: #fff;
+      background: var(--agrabo-green-dark);
+      border: 1px solid var(--agrabo-green-dark);
+    }
+
+    .cart-action {
+      color: #14110f;
+      background: #fff;
+      border: 1px solid var(--agrabo-amber);
+    }
+
+    .recommendations h2 {
+      color: #12110f;
+      font-size: 1.12rem;
+      font-weight: 900;
+      margin: 0 0 10px;
+    }
+
+    .recommend-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr);
+      gap: 14px;
+    }
+
+    .recommend-card {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr) 34px;
+      align-items: center;
+      gap: 14px;
+      min-height: 86px;
+      padding: 8px 10px;
+    }
+
+    .recommend-card img {
+      width: 60px;
+      height: 62px;
       object-fit: contain;
+      background: #fff8ee;
+      border-radius: 8px;
+      padding: 4px;
     }
 
-    .suggestions strong,
-    .suggestions small {
+    .recommend-card h3 {
+      color: #14110f;
+      font-size: 0.88rem;
+      font-weight: 900;
+      margin: 0 0 1px;
+    }
+
+    .recommend-card span {
       display: block;
-      color: var(--agrabo-brown);
+      color: var(--agrabo-amber);
+      font-size: 0.78rem;
+      font-weight: 900;
+      margin-bottom: 10px;
     }
 
-    @media (max-width: 992px) {
-      .detail-grid,
-      .gallery-layout,
-      .related-row,
-      .action-row,
-      .detail-mini-trust,
-      .health-row {
+    .recommend-card strong {
+      color: #14110f;
+      font-size: 0.86rem;
+      font-weight: 900;
+    }
+
+    .recommend-card button {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      color: var(--agrabo-amber);
+      background: #fff;
+      border: 1px solid var(--agrabo-amber);
+      border-radius: 8px;
+    }
+
+    .bulk-recommend {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr);
+      align-items: center;
+      gap: 18px;
+      min-height: 86px;
+      color: #14110f;
+      padding: 12px 20px;
+      text-decoration: none;
+    }
+
+    .bulk-recommend > span {
+      display: grid;
+      place-items: center;
+      width: 56px;
+      height: 56px;
+      color: var(--agrabo-amber);
+      background: #fff0da;
+      border-radius: 999px;
+      font-size: 1.35rem;
+    }
+
+    .bulk-recommend strong,
+    .bulk-recommend small,
+    .bulk-recommend b {
+      display: block;
+    }
+
+    .bulk-recommend strong {
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .bulk-recommend small {
+      color: #4f4a45;
+      font-size: 0.84rem;
+      margin: 2px 0 10px;
+    }
+
+    .bulk-recommend b {
+      width: fit-content;
+      color: var(--agrabo-green);
+      border: 1px solid var(--agrabo-green);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 900;
+      padding: 5px 16px;
+    }
+
+    .not-found {
+      padding: 36px;
+      text-align: center;
+    }
+
+    @media (max-width: 1180px) {
+      .product-layout,
+      .info-card {
         grid-template-columns: 1fr;
       }
 
-      .suggestions {
+      .recommend-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .product-frame {
+        width: min(100% - 22px, 1440px);
+      }
+
+      .visual-card,
+      .info-card {
+        min-height: auto;
+        padding: 22px;
+      }
+
+      .visual-card img {
+        max-height: 330px;
+      }
+
+      .recommend-grid,
+      .recommend-card,
+      .bulk-recommend {
+        grid-template-columns: 1fr;
+      }
+
+      .recommend-card {
+        justify-items: start;
       }
     }
   `]
 })
 export class ProductDetailPage {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly productService = inject(ProductService);
-  readonly cart = inject(CartService);
-  readonly quantity = signal(1);
-  readonly thumbs = [
-    'assets/products/deli-honey-500g.png',
-    'assets/products/deli-honey-250g.png',
-    'assets/backgrounds/4.png',
-    'assets/backgrounds/7.png',
-    'assets/backgrounds/3.png'
-  ];
-  readonly healthBenefits = [
-    { icon: 'bi bi-lightning-charge-fill', title: 'Energy Booster', text: 'Natural sugars provide a quick and healthy energy lift.' },
-    { icon: 'bi bi-shield-fill-check', title: 'Immune Support', text: 'Rich in antioxidants that help strengthen immunity.' },
-    { icon: 'bi bi-heart-pulse-fill', title: 'Digestive Aid', text: 'Supports healthy digestion and soothes the gut.' },
-    { icon: 'bi bi-droplet-fill', title: 'Antibacterial Properties', text: 'Helps support overall wellness.' }
-  ];
-  readonly suggestions = [
-    { name: 'Deli Honey 1kg', image: 'assets/products/deli-honey-1kg.png', price: 'UGX 55,000' },
-    { name: 'Deli Honey 5L', image: 'assets/products/deli-honey-bulk.png', price: 'UGX 250,000' },
-    { name: 'Deli Honey 20L', image: 'assets/products/deli-honey-bulk.png', price: 'UGX 850,000' },
-    { name: 'Beeswax Blocks', image: 'assets/backgrounds/7.png', price: 'UGX 15,000' }
-  ];
+  private readonly cart = inject(CartService);
 
+  readonly quantity = signal(1);
   readonly product$ = this.route.paramMap.pipe(
     map((params) => Number(params.get('id'))),
     switchMap((id) => this.productService.getProduct(id))
   );
+
+  readonly productBenefits = [
+    { title: 'Perfect for tea', icon: 'bi bi-cup-hot' },
+    { title: 'Great with breakfast', icon: 'bi bi-basket' },
+    { title: 'Ideal for daily use', icon: 'bi bi-heart' }
+  ];
+
+  readonly recommendations = [
+    { name: 'Deli Honey', size: '100g', price: 5000 },
+    { name: 'Deli Honey', size: '250g', price: 13000 },
+    { name: 'Deli Honey', size: '1kg', price: 55000 }
+  ];
 
   increment(): void {
     this.quantity.update((value) => value + 1);
@@ -415,14 +574,17 @@ export class ProductDetailPage {
     this.quantity.update((value) => Math.max(1, value - 1));
   }
 
-  detailImage(imageUrl?: string | null): string {
-    if (imageUrl?.includes('500g')) {
-      return 'assets/products/product-detail-500g.png';
-    }
+  addToCart(product: Product): void {
+    this.cart.add(product, this.quantity());
+  }
 
-    if (imageUrl) {
-      return imageUrl;
-    }
-    return 'assets/products/product-detail-500g.png';
+  buyNow(product: Product): void {
+    this.cart.add(product, this.quantity());
+    this.router.navigateByUrl('/checkout');
+  }
+
+  whatsappUrl(product: Product): string {
+    const text = encodeURIComponent(`Hello AGRABO, I want to order ${this.quantity()} x ${product.name} ${product.size}.`);
+    return `https://wa.me/256706506319?text=${text}`;
   }
 }
